@@ -1,5 +1,5 @@
 /*
-	ltpdeliv
+	ltpdeliv.c:ltp进行seg收发处理的daemon
 */
 
 #include "ltp.h"
@@ -7,7 +7,15 @@
 int main(int argc, char *argv[])
 {
 	/*定义一些变量*/
+	
 	Object		elt;
+	Object		delivObj;
+	Object		currentElt;
+	LtpSeg		seg;
+	unsigned int	clientSvcId;
+	unsigned int	sessionNbr;
+	uvast		sourceEngineId;
+	Sdr		sdr;
 	
 	if (ltpInit(0) < 0)
 	{
@@ -17,14 +25,11 @@ int main(int argc, char *argv[])
 	
 	/*main loop*/
 	writeMemo("ltpdeliv is running.");
-	while(deliverySemaphore != 0)//传输东西的信号量不为零，可以进行传输
+	while(handle_que != 0)
 	{
-		elt = sdr_list_first();//获取第一个要传输的东西
-		if(elt == NULL)
-			break;//没有要传输的东西
-		
-		ltp_trans(elt);//传输
-		update_sdr_list();//更新传输列表
+		ltpHandleSegment(seg);
+		ltp_trans(seg);
+		update_handle_list();
 	}
 	
 	writeMemo("ltpdeliv has ended.");

@@ -10,9 +10,7 @@
 #ifndef _LTP_P_H_
 #define _LTP_P_H_
 
-typedef unsigned long		uaddr;
-typedef uaddr		SdrObject;
-#define	Object		SdrObject
+#include "sdr.h"
 
 /* LTP segment structure definitions. */
 
@@ -48,6 +46,14 @@ typedef struct{
 	unsigned int	sessionNbr;
 }LtpSessionId;
 
+typedef struct
+{
+	time_t			segArrivalTime;
+	time_t			ackDeadline;
+	int			expirationCount;
+	LtpTimerState		state;
+} LtpTimer;
+
 typedef enum
 {
 	LtpDsRed = 0,
@@ -76,6 +82,8 @@ typedef enum
 typedef struct
 {
 	LtpSegmentTypeCode	segTypeCode;
+	LtpSessionId		sessionID;
+	unsigned int		versionNbr;
 	unsigned int		headerLength;
 	unsigned int		contentLength;
 	unsigned int		trailerLength;
@@ -85,19 +93,23 @@ typedef struct
 	Object			headerExtensions;
 	Object			trailerExtensions;
 
+	unsigned int		ckptSerialNbr;
+	unsigned int		rptSerialNbr;
+	
+	LtpTimer		timer;	/*	Checkpoint or report.	*/
+
 	/*	Fields for data segments.				*/
 
-	unsigned int		ohdLength;	/*	Data seg ohd.	*/
-	unsigned int		clientSvcId;	/*	Destination.	*/
-	unsigned int		offset;		/*	Within block.	*/
-	unsigned int		length;		/*	Of block data.	*/
-	Object			block;	/*	Session svcDataObjects.	*/
+	unsigned int		clientSvcId;
+	unsigned int		offset;	
+	unsigned int		length;
+	Object			block; /* Client service data */
 
 	/*	Fields for report segments.				*/
 
 	unsigned int		upperBound;
 	unsigned int		lowerBound;
-	Object			receptionClaims;/*	SDR list.	*/
+	Object			receptionClaims;
 
 	/*	Fields for management segments.				*/
 
@@ -127,7 +139,7 @@ typedef enum
 
 typedef struct
 {
-	unsigned int	acqOffset;	/*	Within acquisition ZCO.	*/
+	unsigned int	acqOffset;
 	Object		sessionObj;
 	Object		sessionListElt;
 	LtpSegmentClass	segmentClass;
@@ -160,6 +172,26 @@ typedef struct
 	LtpSeg		seg;
 } LtpXmitSeg;
 
+/* Span structure characterizing the communication span between the
+ * local engine and some remote engine. */
+
+typedef struct
+{
+	uvast		engineId;	/*	ID of remote engine.	*/
+	Sdnv		engineIdSdnv;
+	unsigned int	remoteQtime;	/*	In seconds.		*/
+	int		purge;		/*	Boolean.		*/
+	unsigned int	maxExportSessions;
+	unsigned int	maxImportSessions;
+	unsigned int	importBufferCount;
+	unsigned int	aggrSizeLimit;	/*	Bytes.			*/
+	unsigned int	aggrTimeLimit;	/*	Seconds.		*/
+	unsigned int	maxSegmentSize;	/*	MTU size, in bytes.	*/
+	Object		stats;		/*	LtpSpanStats address.	*/
+	int		updateStats;	/*	Boolean.		*/
+
+} LtpSpan;
+
 extern int ltp_trans(unsigned int clientId,
 					engineId destinationEngineId,
 					Object clientServiceData,
@@ -169,9 +201,9 @@ extern int ltp_cancel_trans(LtpSessionId *sessionId);
 
 extern int ltp_cancel_reception(LtpSessionId *sessionId);
 
-extern int transSessionStart_indication(LtpSessionId *sessionId);
+extern int transStart_indication(LtpSessionId *sessionId);
 
-extern int receptionSessionStart_indication(LtpSessionId *sessionId);
+extern int receptionStart_indication(LtpSessionId *sessionId);
 
 extern int RedpartReception_indication(LtpSessionId *sessionId,
 										unsigned int red_lenth,
@@ -179,10 +211,10 @@ extern int RedpartReception_indication(LtpSessionId *sessionId,
 
 extern int InitTransCompletion_indication(LtpSessionId *sessionId);
 
-extern int TransSessionCompletion_indication(LtpSessionId *sessionId);
+extern int TransCompletion_indication(LtpSessionId *sessionId);
 
-extern int TransSessionCancel_indication(LtpSessionId *sessionId,
-										int reason_code);
+extern int TransCancel_indication(LtpSessionId *sessionId,
+								int reason_code);
 
-extern int ReceptionSessionCancel_indication(LtpSessionId *sessionId,
-										int reason_code);
+extern int ReceptionCancel_indication(LtpSessionId *sessionId,
+									int reason_code);
