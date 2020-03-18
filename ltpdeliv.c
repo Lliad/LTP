@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 		if(elt == NULL)
 			break;//没有要传输的东西
 		
-		ltp_send(elt);//传输
+		ltp_trans(elt);//传输
 		update_sdr_list();//更新传输列表
 	}
 	
