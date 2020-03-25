@@ -1,45 +1,8 @@
-/*
-	sdr.h
-*/
+/* sdr.h */
 
-typedef unsigned long		uaddr;
-typedef uaddr		SdrObject;
-#define	Object		SdrObject
-typedef uaddr		SdrAddress;
-#define	Address		SdrAddress
+extern int		sdr_begin_xn(Sdr sdr);
 
-/*		Private definitions of SDR list structures.		*/
+extern int		sdr_end_xn(Sdr sdr);
 
-typedef struct
-{
-	Address		userData;
-	Object		first;
-	Object		last;
-	size_t		length;
-} SdrList;
-
-typedef struct
-{
-	Object		list;	/*	list that this element is in	*/
-	Object		prev;
-	Object		next;
-	Object		data;
-} SdrListElt;
-
-/*	List management functions	*/
-
-static void	sdr_list__clear(SdrList *list)
-{
-	list->userData = 0;
-	list->first = 0;
-	list->last = 0;
-	list->length = 0;
-}
-
-static void	sdr_list__elt_clear(SdrListElt *elt)
-{
-	elt->list = 0;
-	elt->prev = 0;
-	elt->next = 0;
-	elt->data = 0;
-}
+extern Object		sdr_insert(Sdr sdr, char *from, 
+								size_t size);
