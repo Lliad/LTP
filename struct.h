@@ -9,11 +9,6 @@ typedef unsigned long		uaddr;
 typedef uaddr		SdrObject;
 #define	Object		SdrObject
 
-#define CHKERR(e)    		if (!(e)) return ERROR
-#define CHKZERO(e)    		if (!(e)) return 0
-#define CHKNULL(e)    		if (!(e)) return NULL
-#define CHKVOID(e)    		if (!(e)) return
-
 typedef struct
 {
 	int		length;
@@ -22,23 +17,23 @@ typedef struct
 
 typedef struct sdrv_str
 {
-	SdrState	*sdr;		/*	Local SDR state access.	*/
+	SdrState	*sdr;
 
-	int		dsfile;		/*	DS in file (fd).	*/
-	char		*dssm;		/*	DS in shared memory.	*/
-	uaddr		dssmId;		/*	DS shmId if applicable.	*/
+	int		dsfile;
+	char		*dssm;
+	uaddr		dssmId;
 
-	int		logfile;	/*	Xn log file (fd).	*/
-	char		*logsm;		/*	Log in shared memory.	*/
-	uaddr		logsmId;	/*	Log shmId if applicable.*/
+	int		logfile;
+	char		*logsm;
+	uaddr		logsmId;
 
-	Lyst		knownObjects;	/*	ObjectExtents.		*/
-	int		modified;	/*	Boolean.		*/
+	Lyst		knownObjects;
+	int		modified;
 
-	PsmView		traceArea;	/*	local access to trace	*/
-	PsmView		*trace;		/*	local access to trace	*/
-	const char	*currentSourceFileName;	/*	for tracing	*/
-	int		currentSourceFileLine;	/*	for tracing	*/
+	PsmView		traceArea;
+	PsmView		*trace;
+	const char	*currentSourceFileName;
+	int		currentSourceFileLine;
 } SdrView;
 
 typedef struct sdrv_str	*Sdr;
@@ -49,19 +44,15 @@ typedef uaddr		PsmAddress;
 
 typedef struct sdr_str
 {
-		/*	General SDR operational parameters.	*/
-
 	char		name[32];
-	PsmAddress	sdrsElt;		/*	In sch->sdrs.	*/
+	PsmAddress	sdrsElt;
 	int		configFlags;
-	size_t		initHeapWords;		/*	In FULL WORDS.	*/
-	size_t		heapSize;		/*	dsSize - map	*/
-	size_t		dsSize;			/*	heap + map	*/
-	int		dsKey;			/*	RAM DS shmKey	*/
-	size_t		logSize;		/*	(if in memory)	*/
-	int		logKey;			/*	RAM log shmKey	*/
-
-		/*	Parameters of current transaction.	*/
+	size_t		initHeapWords;
+	size_t		heapSize;
+	size_t		dsSize;
+	int		dsKey;
+	size_t		logSize;
+	int		logKey;
 
 	sm_SemId	sdrSemaphore;
 	int		sdrOwnerTask;		/*	Task ID.	*/
@@ -72,18 +63,13 @@ typedef struct sdr_str
 	int		maxLogLength;		/*	Max Log Length  */
 	PsmAddress	logEntries;		/*	Offsets in log.	*/
 
-		/*	SDR trace data access.			*/
 
-	int		traceKey;		/*	trace shmKey	*/
-	size_t		traceSize;		/*	0 = disabled	*/
-
-		/*	Path to directory for files (log, ds).	*/
+	int		traceKey;
+	size_t		traceSize;
 
 	char		pathName[MAXPATHLEN];
 
-		/*	Parameters for restart.				*/
-
-	int		halted;			/*	boolean		*/
+	int		halted;
 	char		restartCmd[32];
 	time_t		restartTime;
 } SdrState;
@@ -99,3 +85,118 @@ typedef struct
 	vast	trailersLengthCopied;		/*	within extents	*/
 	vast	lengthCopied;			/*	incl. capsules	*/
 } ZcoReader;
+
+typedef enum
+{
+	ZcoInbound = 0,
+	ZcoOutbound = 1,
+	ZcoUnknown = 2
+} ZcoAcct;
+
+typedef struct
+{
+	Object		firstHeader;		/*	Capsule		*/
+	Object		lastHeader;		/*	Capsule		*/
+
+	/*	Note that prepending headers and appending trailers
+	 *	increases the lengths of the linked list for headers
+	 *	and trailers but DOES NOT affect the headersLength
+	 *	and trailersLength fields.  These fields indicate only
+	 *	how much of the concatenated content of all extents
+	 *	in the linked list of extents is currently believed
+	 *	to constitute ADDITIONAL opaque header and trailer
+	 *	information, just as sourceLength indicates how much
+	 *	of the concatenated content of all extents is believed
+	 *	to constitute source data.  The total length of the
+	 *	ZCO is the sum of the lengths of the extents (some of
+	 *	which sum is source data and some of which may be
+	 *	opaque header and trailer information) plus the sum
+	 *	of the lengths of all explicitly attached headers and
+	 *	trailers.						*/
+
+	Object		firstExtent;		/*	SourceExtent	*/
+	Object		lastExtent;		/*	SourceExtent	*/
+	vast		headersLength;		/*	within extents	*/
+	vast		sourceLength;		/*	within extents	*/
+	vast		trailersLength;		/*	within extents	*/
+
+	Object		firstTrailer;		/*	Capsule		*/
+	Object		lastTrailer;		/*	Capsule		*/
+
+	vast		aggregateCapsuleLength;
+	vast		totalLength;		/*	incl. capsules	*/
+
+	ZcoAcct		acct;
+} Zco;
+
+typedef struct
+{
+	double		fileOccupancy;
+	double		maxFileOccupancy;
+	double		bulkOccupancy;
+	double		maxBulkOccupancy;
+	double		heapOccupancy;
+	double		maxHeapOccupancy;
+} ZcoBook;
+
+typedef struct
+{
+	ZcoBook		books[2];
+} ZcoDB;
+
+typedef struct
+{
+	Object		text;		/*	header or trailer	*/
+	vast		length;
+	Object		prevCapsule;
+	Object		nextCapsule;
+} Capsule;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	unsigned long	inode;		/*	For detecting change.	*/
+	unsigned long	fileLength;	/*	For detecting EOF.	*/
+	unsigned long	xmitProgress;	/*	For detecting EOF.	*/
+	char		pathName[256];
+	char		cleanupScript[256];
+	char		okayToDestroy;	/*	Boolean.		*/
+	char		unlinkOnDestroy;/*	Boolean.		*/
+} FileRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	unsigned long	item;		/*	Bulk item location.	*/
+	vast		length;		/*	Length of object.	*/
+	char		okayToDestroy;	/*	Boolean.		*/
+} BulkRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		object;		/*	Heap address of object.	*/
+	vast		length;		/*	Length of object.	*/
+	char		okayToDestroy;	/*	Boolean.		*/
+} ObjRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of FileRef.*/
+	vast		length;		/*	Length of lien on file.	*/
+} ZcoFileLien;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of BulkRef.*/
+	vast		length;		/*	Length of lien on item.	*/
+} ZcoBulkLien;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of ObjRef.	*/
+	vast		length;		/*	Length of lien on obj.	*/
+} ZcoObjLien;
