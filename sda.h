@@ -1,6 +1,10 @@
 /* sda.h */
 
 #include "ltp.h"
+#include "platform.h"
+#include "ion.h"
+#include "sdrxn.h"
+#include "struct.h"
 
 #ifndef _SDA_H_
 #define _SDA_H_
