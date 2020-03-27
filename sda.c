@@ -36,9 +36,6 @@ int	sda_send(uvast destinationEngineId, unsigned int clientSvcId,
 	Object		sdaZco;
 	LtpSessionId	sessionId;/* def in ltp.h */
 
-	CHKERR(destinationEngineId);
-	CHKERR(clientSvcId);
-	CHKERR(clientServiceData);
 	encodeSdnv(&sdnvBuf, clientSvcId);
 	CHKERR(sdr_begin_xn(sdr));
 	sdaZco = zco_clone(sdr, clientServiceData, 0,
@@ -228,7 +225,6 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 				break;		/*	Out of switch.	*/
 			}
 
-			CHKERR(sdr_begin_xn(sdr));
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
@@ -252,7 +248,6 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 				 *	partially green, an error.	*/
 
 				writeMemo("[?] SDA block partially green.");
-				CHKERR(sdr_begin_xn(sdr));
 				zco_destroy(sdr, data);
 				if (sdr_end_xn(sdr) < 0)
 				{
@@ -263,7 +258,6 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 				break;		/*	Out of switch.	*/
 			}
 
-			CHKERR(sdr_begin_xn(sdr));
 			if (receiveSdaItems(delimiter, handler, data,
 					sessionId.sourceEngineId) < 0)
 			{
@@ -282,7 +276,6 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 
 		case LtpRecvGreenSegment:
 			writeMemo("[?] SDA received a green segment.");
-			CHKERR(sdr_begin_xn(sdr));
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
@@ -299,8 +292,6 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 
 	writeErrmsgMemos();
 	writeMemo("[i] SDA reception has ended.");
-
-	/*	Free resources.						*/
 
 	ltp_close(SdaLtpClientId);
 	return 0;
