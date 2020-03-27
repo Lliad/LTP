@@ -143,6 +143,8 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 	unsigned int	dataOffset;
 	unsigned int	dataLength;
 	Object		data;
+	
+	/* init */
 
 	if (ltp_attach() < 0)
 	{
@@ -157,7 +159,8 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 	}
 
 	sdr = getIonsdr();
-
+	
+	/* main loop */
 	while (_running(NULL))
 	{
 		if (ltp_get_notice(SdaLtpClientId, &type, &sessionId,
@@ -180,7 +183,7 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Crashed on data cleanup.");
+				printf("Can't destroy block.\n");
 				_running(&state);
 			}
 
@@ -196,7 +199,7 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 				zco_destroy(sdr, data);
 				if (sdr_end_xn(sdr) < 0)
 				{
-					printf("Can't destroy block.");
+					printf("Can't destroy block.\n");
 					_running(&state);
 				}
 
@@ -206,14 +209,14 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 			if (receiveSdaItems(delimiter, handler, data,
 					sessionId.sourceEngineId) < 0)
 			{
-				printf("Can't acquire SDA item.\n");
+				printf("Can't get SDA item.\n");
 				_running(&state);
 			}
 
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Can't release block."\n);
+				printf("Can't destroy block.\n");
 				_running(&state);
 			}
 
@@ -224,7 +227,7 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Can't destroy item.\n");
+				printf("Can't destroy block.\n");
 				_running(&state);
 			}
 
