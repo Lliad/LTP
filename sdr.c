@@ -16,8 +16,7 @@ int	sdr_end_xn(Sdr sdrv)
 
 }
 
-Object	sdr_insert(Sdr sdrv, char *from,
-		size_t size)
+Object	sdr_insert(Sdr sdrv, char *from, size_t size)
 {
 
 }
