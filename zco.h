@@ -1,5 +1,8 @@
 /* zco.h */
 
+#include "platform.h"
+#include "sdrxn.h"
+
 typedef struct
 {
 	Object	zco;
@@ -62,15 +65,13 @@ typedef struct
 	Object		nextExtent;
 } SourceExtent;
 
-extern void	zco_start_receiving(Object zco,
-				ZcoReader *reader);
+extern void	zco_start_receiving(Object zco, ZcoReader *reader);
 				
-vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
-		char *buffer)
+vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length, char *buffer)
 				
-extern void	zco_destroy(Sdr sdr,
-				Object zco);
-				
+extern void	zco_destroy(Sdr sdr,Object zco);
+
+/* for sda use */
 Object	zco_clone(Sdr sdr, Object fromZcoObj, vast offset, vast length);
 
 vast	zco_source_data_length(Sdr sdr, Object zcoObj);
