@@ -1,10 +1,19 @@
-/* zco.c */
-
 #include "zco.h"
-#include "struct.h"
+
+/* main */
 
 void	zco_start_receiving(Object zco, ZcoReader *reader)
 {
+	if(!zco)
+	{
+		return;
+	}
+	
+	if(!reader)
+	{
+		return;
+	}
+	
 	memset((char *) reader, 0, sizeof(ZcoReader));
 	reader->zco = zco;
 }
@@ -12,15 +21,32 @@ void	zco_start_receiving(Object zco, ZcoReader *reader)
 vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
 		char *buffer)
 {
-	Zco		zco;
 	vast		bytesToSkip;
 	vast		bytesToReceive;
 	vast		bytesReceived;
-	vast		bytesAvbl;
+	vast		bytesAvbl;/*  the lenth each time copied  */
+	
+	Zco		zco;
 	Object		obj;
 	SourceExtent	extent;
+	
 	int		failed = 0;
 
+	if(!sdr)
+	{
+		return ERROR;
+	}
+	
+		if(!reader)
+	{
+		return ERROR;
+	}
+	
+		if(lenth < 0)
+	{
+		return ERROR;
+	}
+	
 	if (length == 0)
 	{
 		return 0;
@@ -37,7 +63,7 @@ vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
 		if (bytesToSkip >= bytesAvbl)
 		{
 			bytesToSkip -= bytesAvbl;
-			continue;
+			continue;	/*	not the target	*/
 		}
 
 		bytesAvbl -= bytesToSkip;
@@ -49,20 +75,20 @@ vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
 		if (buffer)
 		{
 			if (copyFromSource(sdr, buffer, &extent, bytesToSkip,
-					bytesAvbl, reader) < bytesAvbl)
+					bytesAvbl, reader) < bytesAvbl) /* here is an undeal func: copyFromSource */
 			{
-				failed = 1;
+				failed = 1;	/*	Source problem.	*/
 			}
 
 			buffer += bytesAvbl;
 		}
 
-		bytesToSkip = 0;
-
-		reader->sourceLengthCopied += bytesAvbl;
+		bytesToSkip = 0; /* skip just once */
 		bytesToReceive -= bytesAvbl;
 		bytesReceived += bytesAvbl;
-		if (bytesToReceive == 0)	/*	Done.		*/
+		reader->sourceLengthCopied += bytesAvbl;
+
+		if (bytesToReceive == 0)
 		{
 			break;
 		}
@@ -78,26 +104,31 @@ vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
 
 void	zco_destroy(Sdr sdr, Object zco)
 {
-	destroyZco(sdr, zco);
+	if(!sdr)
+	{
+		return;
+	}
+	if(!zco)
+	{
+		return;
+	}
+	destroyZco(sdr, zco);/* here is an undeal func: destroyZco */
 }
 
-/* for sda use */
-
-vast	zco_source_data_length(Sdr sdr, Object zcoObj)
-{
-	int	headersLength;
-	int	trailersLength;
-	
-	OBJ_POINTER(Zco, zco);
-	GET_OBJ_POINTER(sdr, Zco, zco, zcoObj);
-	
-	headersLength = zco->headersLength;
-	trailersLength = zco->trailersLength;
-
-	return zco->sourceLength + headersLength + trailersLength;
-}
+/* for other use */
 
 Object	zco_clone(Sdr sdr, Object fromZcoObj, vast offset, vast length)
 {
+}
 
+vast	zco_source_data_length(Sdr sdr, Object zcoObj)
+{
+}
+
+int	zco_prepend_header(Sdr sdr, Object zco, char *text, vast length)
+{
+}
+
+int	zco_bond(Sdr sdr, Object zco)
+{
 }

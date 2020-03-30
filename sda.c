@@ -1,38 +1,47 @@
-/* sda.c */
-
 #include "sda.h"
-#include "stdio.h"
+#include <sched.h> /* for sched_yield */
 
-#define	SdaLtpClientId	(2)
-
-static int	_running(int *newState)
+void	sda_interrupt()
 {
-	static int	state = 0;
-
-	if (newState)
-	{
-		state = *newState;
-	}
-
-	return state;
+	ltp_interrupt(SdaLtpClientId); /* an undeal func */
 }
 
 int	sda_send(uvast destinationEngineId, unsigned int clientSvcId,
 		Object clientServiceData)
 {
-	Sdr		sdr = getIonsdr();/* def in ion.h */
-	Sdnv		sdnvBuf;/* def in platform.h */
+	Sdr		sdr = getIonsdr();
+	Sdnv		sdnvBuf;
 	Object		sdaZco;
-	LtpSessionId	sessionId;/* def in ltp.h */
+	LtpSessionId	sessionId;
 
-	encodeSdnv(&sdnvBuf, clientSvcId);
-	sdaZco = zco_clone(sdr, clientServiceData, 0,
-			zco_source_data_length(sdr, clientServiceData));
-	if (sdaZco != (Object) ERROR && sdaZco != 0)
+	if(!destinationEngineId)
 	{
-		zco_prepend_header(sdr, sdaZco, (char *) sdnvBuf.text,
+		return ERROR;
+	}
+
+	if(!clientSvcId)
+	{
+		return ERROR;
+	}
+	
+	if(!clientServiceData)
+	{
+		return ERROR;
+	}
+	
+	encodeSdnv(&sdnvBuf, clientSvcId);
+	if(!(sdr_begin_xn(sdr)))
+	{
+		return ERROR;
+	}
+	
+	sdaZco = zco_clone(sdr, clientServiceData, 0, /* here is an undeal func: zco_clone */
+			zco_source_data_length(sdr, clientServiceData)); /* here is an undeal func: zco_source_data_length */
+	if (sdaZco)
+	{
+		zco_prepend_header(sdr, sdaZco, (char *) sdnvBuf.text, /* here is an undeal func: zco_prepend_header */
 				sdnvBuf.length);
-		zco_bond(sdr, sdaZco);
+		zco_bond(sdr, sdaZco); /* here is an undeal func: zco_bond */
 	}
 
 	if (sdr_end_xn(sdr) < 0)
@@ -41,114 +50,36 @@ int	sda_send(uvast destinationEngineId, unsigned int clientSvcId,
 		return -1;
 	}
 
-	switch (ltp_send(destinationEngineId, SdaLtpClientId, sdaZco,
-			LTP_ALL_RED, &sessionId))/* def in ltp.h */
+	switch (ltp_send(destinationEngineId, SdaLtpClientId, sdaZco, /* here is an undeal func: ltp_send, def in ltp.h*/
+			LTP_ALL_RED, &sessionId))
 	{
 	case 0:
-		printf("Unable to send service data item via LTP.");
+		printf("Unable to send service data item via LTP.\n");
 		break;
 
 	case -1:
 		printf("sd_send failed.\n");
 		return -1;
 	}
-	
-	/*  succes */
+
 	return 0;
-}
-
-static int	receiveSdaItems(SdaDelimiterFn delimiter, SdaHandlerFn handler,
-			Object zco, uvast senderEngineNbr)
-{
-	Sdr		sdr = getIonsdr();
-	uvast		bytesHandled = 0;
-	ZcoReader	reader;
-	vast		bytesReceived;
-	unsigned char	buffer[2048];
-	int		offset;
-	uvast		clientId;
-	vast		itemLength;
-	Object		itemZco;
-	int 		state; /* for return */
-
-	/* receiving loop */
-	zco_start_receiving(zco, &reader);
-	while (1)
-	{ 
-		bytesReceived = zco_receive_source(sdr, &reader, sizeof buffer,
-				(char *) buffer);
-		switch (bytesReceived)
-		{
-		case -1:
-			printf("Error");
-			return -1;
-
-		case 0:
-			return 0;
-		}
-		
-		/* succes */
-
-		offset = decodeSdnv(&clientId, buffer);
-		if (offset == 0)
-		{
-			printf("No SDA item at start of LTP block.");
-			return 0;
-		}
-
-		bytesHandled += offset;
-		itemLength = delimiter(clientId, buffer + offset,
-				bytesReceived - offset);
-		switch (itemLength)
-		{
-		case -1:
-			printf("Failure calculating SDA item length.\n");
-			return -1;
-
-		case 0:
-			printf("Invalid SDA item in LTP block.\n");
-			return 0;
-		}
-
-		/*	Clone the client data unit   */
-
-		itemZco = zco_clone(sdr, zco, bytesHandled, itemLength);
-
-		zco_destroy(sdr, itemZco);
-		bytesHandled += itemLength;
-
-		zco_start_receiving(zco, &reader);
-		state = zco_receive_source(sdr, &reader, bytesHandled, NULL);
-		switch (state)
-		{
-		case -1:
-			printf("Can't skip over handled items.");
-			return -1;
-
-		case 0:
-			printf("LTP-SDA block file access error.");
-			return 0;
-		}
-	}
 }
 
 int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 {
-	Sdr		sdr;/* def in sdrxn.h */
-	int		state = 0;
-	LtpNoticeType	type;/* def in ltp.h */
-	LtpSessionId	sessionId;/* def in ltp.h */
+	Sdr		sdr;
+	int		state = 1;
+	LtpNoticeType	type;
+	LtpSessionId	sessionId;
 	unsigned char	reasonCode;
 	unsigned char	endOfBlock;
 	unsigned int	dataOffset;
 	unsigned int	dataLength;
 	Object		data;
-	
-	/* init */
 
 	if (ltp_attach() < 0)
 	{
-		printf("SDA can't initialize LTP.");
+		printf("SDA can't initialize LTP.\n");
 		return -1;
 	}
 
@@ -159,43 +90,64 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 	}
 
 	sdr = getIonsdr();
-	
-	/* main loop */
+
+	/*	Can now start receiving notices.  On failure,
+	 *	terminate SDA.						*/
+
+	//isignal(SIGINT, handleQuit);
+	_running(&state);
+	state = 0;	/*	Prepare for stop.			*/
 	while (_running(NULL))
 	{
 		if (ltp_get_notice(SdaLtpClientId, &type, &sessionId,
 				&reasonCode, &endOfBlock, &dataOffset,
 				&dataLength, &data) < 0)
 		{
-			printf("SDA failed getting LTP notice.\n");
+			printf("[?] SDA failed getting LTP notice.\n");
+			_running(&state);
 			continue;
 		}
 
 		switch (type)
 		{
-		case LtpExportSessionComplete:
-		case LtpExportSessionCanceled:
-			if (data == 0)
+		case LtpExportSessionComplete:	/*	Xmit success.	*/
+		case LtpExportSessionCanceled:	/*	Xmit failure.	*/
+			if (data == 0)		/*	Ignore it.	*/
 			{
-				break;
+				break;		/*	Out of switch.	*/
 			}
 
+			if(!(sdr_begin_xn(sdr)))
+			{
+				return ERROR;
+			}
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Can't destroy block.\n");
+				printf("Crashed on data cleanup.\n");
 				_running(&state);
 			}
 
-			break;
+			break;		/*	Out of switch.		*/
 
 		case LtpImportSessionCanceled:
-			break;
+			/*	None of the red data for the import
+			 *	session (if any) have been received
+			 *	yet, so nothing to discard.		*/
+
+			break;		/*	Out of switch.		*/
 
 		case LtpRecvRedPart:
 			if (!endOfBlock)
 			{
+				/*	Block is partially red and
+				 *	partially green, an error.	*/
+
 				printf("SDA block partially green.\n");
+				if(!(sdr_begin_xn(sdr)))
+				{
+					return ERROR;
+				}
 				zco_destroy(sdr, data);
 				if (sdr_end_xn(sdr) < 0)
 				{
@@ -203,48 +155,57 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 					_running(&state);
 				}
 
-				break;
+				break;		/*	Out of switch.	*/
 			}
 
+			if(!(sdr_begin_xn(sdr)))
+			{
+				return ERROR;
+			}
 			if (receiveSdaItems(delimiter, handler, data,
 					sessionId.sourceEngineId) < 0)
 			{
-				printf("Can't get SDA item.\n");
+				printf("Can't acquire SDA item(s).\n");
 				_running(&state);
 			}
 
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Can't destroy block.\n");
+				printf("Can't release block.\n");
 				_running(&state);
 			}
 
-			break;
+			break;		/*	Out of switch.		*/
 
 		case LtpRecvGreenSegment:
 			printf("SDA received a green segment.\n");
+			if(!(sdr_begin_xn(sdr)))
+			{
+				return ERROR;
+			}
 			zco_destroy(sdr, data);
 			if (sdr_end_xn(sdr) < 0)
 			{
-				printf("Can't destroy block.\n");
+				printf("Can't destroy item.\n");
 				_running(&state);
 			}
 
-			break;
+			break;		/*	Out of switch.		*/
 
 		default:
-			break;
+			break;		/*	Out of switch.		*/
 		}
+
+		/*	Make sure other tasks have a chance to run.	*/
+
+		sched_yield();
 	}
 
-	printf("SDA reception has ended.\n");
-	ltp_close(SdaLtpClientId);
-	
-	return 0;
-}
+	printf("[i] SDA reception has ended.");
 
-void	sda_interrupt()
-{
-	ltp_interrupt(SdaLtpClientId); /* def in ltp.h */
+	/*	Free resources.						*/
+
+	ltp_close(SdaLtpClientId);
+	return 0;
 }
