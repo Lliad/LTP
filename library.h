@@ -2,6 +2,9 @@
 
 #include <string.h> /* for memset */
 #include <unistd.h> /* for getpid */
+#include <sys/stat.h> /* for open fstst */
+#include <fcntl.h>
+#include <sys/types.h> /* for lseek */
 
 /* * * public field * * */
 
@@ -56,6 +59,57 @@ typedef int	(*SdaHandlerFn)(uvast sourceEngineId,
 		 *	system error, otherwise zero.			*/
 
 /* * * zco field * * */
+
+#define	ZCO_FILE_FILL_CHAR	' '
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	unsigned long	inode;		/*	For detecting change.	*/
+	unsigned long	fileLength;	/*	For detecting EOF.	*/
+	unsigned long	xmitProgress;	/*	For detecting EOF.	*/
+	char		pathName[256];
+	char		cleanupScript[256];
+	char		okayToDestroy;	/*	Boolean.		*/
+	char		unlinkOnDestroy;/*	Boolean.		*/
+} FileRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	unsigned long	item;		/*	Bulk item location.	*/
+	vast		length;		/*	Length of object.	*/
+	char		okayToDestroy;	/*	Boolean.		*/
+} BulkRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		object;		/*	Heap address of object.	*/
+	vast		length;		/*	Length of object.	*/
+	char		okayToDestroy;	/*	Boolean.		*/
+} ObjRef;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of FileRef.*/
+	vast		length;		/*	Length of lien on file.	*/
+} ZcoFileLien;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of BulkRef.*/
+	vast		length;		/*	Length of lien on item.	*/
+} ZcoBulkLien;
+
+typedef struct
+{
+	int		refCount[2];	/*	ZcoInbound, ZcoOutbound	*/
+	Object		location;	/*	Heap address of ObjRef.	*/
+	vast		length;		/*	Length of lien on obj.	*/
+} ZcoObjLien;
 
 typedef struct
 {

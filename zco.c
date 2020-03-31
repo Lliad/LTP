@@ -75,7 +75,7 @@ vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
 		if (buffer)
 		{
 			if (copyFromSource(sdr, buffer, &extent, bytesToSkip,
-					bytesAvbl, reader) < bytesAvbl) /* here is an undeal func: copyFromSource */
+					bytesAvbl, reader) < bytesAvbl)
 			{
 				failed = 1;	/*	Source problem.	*/
 			}

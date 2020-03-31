@@ -111,3 +111,20 @@ int	sdr_in_xn(Sdr sdrv)
 		&& sdrv->sdr->sdrOwnerTask == getpid()
 		&& pthread_equal(sdrv->sdr->sdrOwnerThread, pthread_self()));
 }
+
+void	sdr_stage(Sdr sdrv, char *into, Object from, size_t length)
+{
+
+}
+
+void	Sdr_write(const char *file, int line, Sdr sdrv, Address into,
+		char *from, size_t length)
+{
+	if (!(sdr_in_xn(sdrv)))
+	{
+		return;
+	}
+
+	joinTrace(sdrv, file, line);
+	_sdrput(file, line, sdrv, into, from, length, UserPut);
+}

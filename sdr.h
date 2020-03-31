@@ -16,3 +16,10 @@ extern Object		Sdr_insert(const char *file, int line,
 void	sdr_read(Sdr sdrv, char *into, Address from, size_t length);
 
 int	sdr_in_xn(Sdr sdrv);
+
+void	sdr_stage(Sdr sdrv, char *into, Object from, size_t length);
+
+#define sdr_write(sdr, into, from, size) \
+Sdr_write(__FILE__, __LINE__, sdr, into, from, size)
+extern void		Sdr_write(const char *file, int line,
+				Sdr sdr, Address into, char *from, size_t size);
