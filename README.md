@@ -1,4 +1,6 @@
 # LTP
-Licklider Transmission Protocol\n
-Under CCSDS RECOMMENDED STANDARD and ION struct.\n
-As the convergence layer for DTN, Delay/Disruption Tolerant Networking.\n
+Licklider Transmission Protocol
+
+Under CCSDS RECOMMENDED STANDARD and ION struct.
+
+As the convergence layer for DTN, Delay/Disruption Tolerant Networking.
