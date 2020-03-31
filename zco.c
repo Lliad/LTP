@@ -112,7 +112,7 @@ void	zco_destroy(Sdr sdr, Object zco)
 	{
 		return;
 	}
-	destroyZco(sdr, zco);/* here is an undeal func: destroyZco */
+	destroyZco(sdr, zco);
 }
 
 /* for other use */

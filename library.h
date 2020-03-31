@@ -1,6 +1,7 @@
 /* library.h: struct for use */
 
 #include <string.h> /* for memset */
+#include <unistd.h> /* for getpid */
 
 /* * * public field * * */
 
@@ -58,6 +59,14 @@ typedef int	(*SdaHandlerFn)(uvast sourceEngineId,
 
 typedef struct
 {
+	Object		text;		/*	header or trailer	*/
+	vast		length;
+	Object		prevCapsule;
+	Object		nextCapsule;
+} Capsule;
+
+typedef struct
+{
 	Object	zco;
 	int	trackFileOffset;		/*	Boolean control	*/
 	vast	headersLengthCopied;		/*	within extents	*/
@@ -72,6 +81,15 @@ typedef enum
 	ZcoOutbound = 1,
 	ZcoUnknown = 2
 } ZcoAcct;
+
+typedef enum
+{
+	ZcoFileSource = 1,
+	ZcoBulkSource = 2,
+	ZcoObjSource = 3,
+	ZcoSdrSource = 4,
+	ZcoZcoSource = 5
+} ZcoMedium;
 
 typedef struct
 {
@@ -117,6 +135,8 @@ typedef struct
 
 	ZcoAcct		acct;
 } Zco;
+
+
 
 /* * * sdr field * * */
 

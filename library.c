@@ -126,6 +126,81 @@ static int	copyFromSource(Sdr sdr, char *buffer, SourceExtent *extent,
 
 static void	destroyZco(Sdr sdr, Object zcoObj)
 {
+	Zco	zco;
+	Object	obj;
+	Capsule	capsule;
+	vast	occupancy;
 
+	sdr_read(sdr, (char *) &zco, zcoObj, sizeof(Zco));
+
+	/*	Destroy all source data extents.			*/
+
+	while (zco.firstExtent)
+	{
+		destroyFirstExtent(sdr, zcoObj, &zco);
+	}
+
+	/*	Destroy all headers.					*/
+
+	for (obj = zco.firstHeader; obj; obj = capsule.nextCapsule)
+	{
+		sdr_read(sdr, (char *) &capsule, obj, sizeof(Capsule));
+		sdr_free(sdr, capsule.text);
+		occupancy = capsule.length;
+		sdr_free(sdr, obj);
+		occupancy += sizeof(Capsule);
+		zco_reduce_heap_occupancy(sdr, occupancy, zco.acct);
+	}
+
+	/*	Destroy all trailers.					*/
+
+	for (obj = zco.firstTrailer; obj; obj = capsule.nextCapsule)
+	{
+		sdr_read(sdr, (char *) &capsule, obj, sizeof(Capsule));
+		sdr_free(sdr, capsule.text);
+		occupancy = capsule.length;
+		sdr_free(sdr, obj);
+		occupancy += sizeof(Capsule);
+		zco_reduce_heap_occupancy(sdr, occupancy, zco.acct);
+	}
+
+	/*	Finally destroy the ZCO object.				*/
+
+	sdr_free(sdr, zcoObj);
+	zco_reduce_heap_occupancy(sdr, sizeof(Zco), zco.acct);
 }
 /* * * sdr field * * */
+
+static int	lockSdr(SdrState *sdr)
+{
+	if (sdr->sdrSemaphore == -1)
+	{
+		return -1;
+	}
+
+	sdr->sdrOwnerThread = pthread_self();
+	sdr->sdrOwnerTask = getpid();
+	sdr->xnDepth = 1;
+	return 0;
+}
+
+int	takeSdr(SdrState *sdr)
+{
+	if(!sdr)
+	{
+		return ERROR;
+	}
+	if (sdr->sdrSemaphore == -1)
+	{
+		return -1;		/*	Can't be taken.		*/
+	}
+
+	if (sdr->sdrOwnerTask == getpid()
+	&& pthread_equal(sdr->sdrOwnerThread, pthread_self()))
+	{
+		sdr->xnDepth++;
+		return 0;		/*	Already taken.		*/
+	}
+
+	return lockSdr(sdr);
+}

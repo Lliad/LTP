@@ -1,5 +1,7 @@
 #include "library.h"
 
+/* main */
+
 void	zco_start_receiving(Object zco, ZcoReader *reader);
 
 vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,

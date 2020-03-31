@@ -103,7 +103,7 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 				&reasonCode, &endOfBlock, &dataOffset,
 				&dataLength, &data) < 0)
 		{
-			printf("[?] SDA failed getting LTP notice.\n");
+			printf("SDA failed getting LTP notice.\n");
 			_running(&state);
 			continue;
 		}
@@ -202,7 +202,7 @@ int	sda_run(SdaDelimiterFn delimiter, SdaHandlerFn handler)
 		sched_yield();
 	}
 
-	printf("[i] SDA reception has ended.");
+	printf("SDA reception has ended.\n");
 
 	/*	Free resources.						*/
 

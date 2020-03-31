@@ -1,6 +1,5 @@
 #include "sdr.h"
 #include "pthread.h"
-#include <unistd.h> /* for getpid */
 
 /*  main  */
 
@@ -11,13 +10,13 @@ int	sdr_begin_xn(Sdr sdrv)
 		return 0;
 	}
 	
-	if (takeSdr(sdrv->sdr) < 0)/* here is an undeal func: takeSdr */
+	if (takeSdr(sdrv->sdr) < 0)
 	{
 		return 0;	/*	Failed to begin transaction.	*/
 	}
 
 	sdrv->modified = 0;
-	return 1;		/*	Began transaction.		*/
+	return 1;
 }
 
 int	sdr_end_xn(Sdr sdrv)
