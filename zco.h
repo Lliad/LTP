@@ -2,12 +2,12 @@
 
 /* main */
 
-void	zco_start_receiving(Object zco, ZcoReader *reader);
+void	zco_start_receiving(Object zco, ZcoReader *reader); /* done */
 
-vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length,
+vast	zco_receive_source(Sdr sdr, ZcoReader *reader, vast length, /* undone: copyFromSource */
 		char *buffer);
 
-void	zco_destroy(Sdr sdr, Object zco);
+void	zco_destroy(Sdr sdr, Object zco); /* undone: destoryZco */
 		
 /* for other use */
 

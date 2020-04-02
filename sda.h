@@ -1,5 +1,7 @@
 #include "library.h"
 
+/* all relay on ltp block */
+
 void	sda_interrupt();
 
 int 	sda_send(uvast destinationEngineId, unsigned int clientSvcId,

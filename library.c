@@ -1,6 +1,7 @@
 /* library.c ： func for use */
 
 #include "library.h"
+#include "exlib.c"
 /* * * public field * * */
 
 
@@ -121,7 +122,7 @@ int	bulk_read(unsigned long item, char *buffer, vast offset, vast length)
 	int	fd;
 	int	result;
 
-	getFileName(item, fileName);/* here is an undeal func: getFileName */
+	getFileName(item, fileName); /* here is an undeal func: getFileName */
 	fd = open(fileName, O_RDONLY, 0);
 	if (fd < 0)
 	{
@@ -260,8 +261,8 @@ static void	destroyZco(Sdr sdr, Object zcoObj)
 
 	for (obj = zco.firstHeader; obj; obj = capsule.nextCapsule)
 	{
-		sdr_read(sdr, (char *) &capsule, obj, sizeof(Capsule)); /* here is an undeal func: sdr_free */
-		sdr_free(sdr, capsule.text);
+		sdr_read(sdr, (char *) &capsule, obj, sizeof(Capsule));
+		sdr_free(sdr, capsule.text); /* here is an undeal func: sdr_free */
 		occupancy = capsule.length;
 		sdr_free(sdr, obj);
 		occupancy += sizeof(Capsule);
