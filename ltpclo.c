@@ -47,7 +47,7 @@ int	main(int argc, char *argv[])
 	/* init */
 	if (bpAttach() < 0)
 	{
-		printf("attach bp failed.\n")
+		printf("attach bp failed.\n")；
 		return -1;
 	}
 

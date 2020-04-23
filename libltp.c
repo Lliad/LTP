@@ -1,7 +1,5 @@
 #include "ltpP.h"
 
-#define MAX_LTP_CLIENT_NBR	8
-
 static int	sduCanBeAppendedToBlock(LtpSpan *span,
 			unsigned int clientSvcId,
 			unsigned int redPartLength)
@@ -10,12 +8,18 @@ static int	sduCanBeAppendedToBlock(LtpSpan *span,
 
 	if (span->lengthOfBufferedBlock == 0) /* empty block */
 	{
-		if (redPartLength)	/*	red data.	*/
+		if (sdr_list_length(sdr, span->exportSessions)
+				> span->maxExportSessions)
 		{
-			return 0;
-		}
+			if (redPartLength)	/*	red data */
+			{
+				return 0;	/*	Okay. */
+			}
 
-		return 1; /* all green data */
+			return 1;	/*	all green data	*/
+		}
+		
+		return 1;
 	}
 
 	/*	block all ready contains data	*/
@@ -61,9 +65,9 @@ int	ltp_send(uvast destinationEngineId, unsigned int clientSvcId,
 		return -1;
 	}
 	
+	vdb = getLtpVdb();
 	sdr = getIonsdr();
-	*vdb = getLtpVdb();
-	
+
 	sdr_begin_xn(sdr);
 	findSpan(destinationEngineId, &vspan, &vspanElt);
 	if (vspanElt == 0)
