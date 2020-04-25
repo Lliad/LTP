@@ -1,85 +1,74 @@
-#include <unistd.h>
-#include <stdlib.h>
-
 #include "ltpcla.h"
 #include "ipnfw.h"
 #include "zco.h"
-#include "platform_sm.c"
+
+#include <stdlib.h>
 
 int	main(int argc, char *argv[])
 {
-	char		*ductName = (argc > 1 ? argv[1] : NULL);
-
+	char		*ductName;
 	Sdr		sdr;
 	VOutduct	*vduct;
 	PsmAddress	vductElt;
-	Address addr;
-	uvast 		destEngineId;
+	uvast		destEngineNbr;
 	Outduct		outduct;
+	int		running = 1;
 	Object		bundleZco;
 	BpAncillaryData	ancillaryData;
 	unsigned int	redPartLength;
 	LtpSessionId	sessionId;
 	
-	int		running_state = 1;
-
-	/* check command-line variable vailate or not */
-	if (ductName == NULL)
+	if(argc > 1)
 	{
-		printf("command need ductName.\n");
+		ductName = argv[1];
+	}
+	else
+	{
+		printf("need destination engine number.\n");
 		return 0;
 	}
-	
+	destEngineNbr = strtoull(ductName, NULL, 10);
+
+	if (bpAttach() < 0)
+	{
+		printf("attach bp failed.\n");
+		return -1;
+	}
+
 	sdr = getIonsdr();
 	findOutduct("ltp", ductName, &vduct, &vductElt);
 	if (vductElt == 0)
 	{
-		printf("can not find %s.\n", *ductName);
-		return -1;
-	}
-
-	if (vduct->cloPid != getpid())
-	{
-		printf("CLO task is already started for this duct.\n");
+		printf("can not find this duct.\n");
 		return -1;
 	}
 	
-	/* init */
-	if (bpAttach() < 0)
-	{
-		printf("attach bp failed.\n")；
-		return -1;
-	}
-
 	ipnInit();
+	sdr_begin_xn(sdr);
+	sdr_read(sdr, (char *) &outduct, sdr_list_data(sdr, vduct->outductElt),
+			sizeof(Outduct));
+	sdr_exit_xn(sdr);
+	
 	if (ltp_attach() < 0)
 	{
-		printf("attach ltp failed.\n");
+		printf("attach ltp failed\n.");
 		return -1;
 	}
 	
-	sdr_begin_xn(sdr);		/*	Lock the heap */
-	addr = sdr_list_data(sdr, vduct->outductElt);
-	sdr_read(sdr, (char *) &outduct, addr, sizeof(Outduct));
-	sdr_exit_xn(sdr);			/*	Unlock	*/
-	
-	destEngineId = strtoull(ductName, NULL, 10);
-
-	/*  main loop */
-	printf("ltpclo is running.\n");
-	while (running_state)
+	/*	main loop	*/
+	printf("ltpclo is running.");
+	while (running)
 	{
 		bpDequeue(vduct, &bundleZco, &ancillaryData, -1);
 
-		if (bundleZco == 0)	/*	Outduct closed	*/
+		if (bundleZco == 0)
 		{
-			running_state = 0;	/*	stop clo */
 			break;
 		}
 
-		if (bundleZco == 1)	/* corrupt bundle	*/
+		if (bundleZco == 1)	/* corrupt bundle. */
 		{
-			continue;	/* next loop */
+			continue; /* next loop.	*/
 		}
 
 		if (ancillaryData.flags & BP_BEST_EFFORT)
@@ -90,21 +79,18 @@ int	main(int argc, char *argv[])
 		{
 			redPartLength = LTP_ALL_RED;
 		}
-		
-		/* ltp_send need to be fix */
-		switch (ltp_send(destEngineId, BpLtpClientId, bundleZco,
+
+		switch (ltp_send(destEngineNbr, BpLtpClientId, bundleZco,
 				redPartLength, &sessionId))
-		{	
+		{
+		case 1: /* send success */
+			continue;
+
 		case -1:
-			printf("ltp send failed.\n"); /* send failed */
-			running_state = 0;	/*	stop clo. */
-		
-		case 1:
-			continue; /* send success */
+			printf("ltp send failed.\n");
+			break;	
 		}
 	}
-	
-	printf("ltpclo duct has ended.\n");
 	ionDetach();
 	
 	return 0;
